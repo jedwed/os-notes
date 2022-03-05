@@ -146,7 +146,7 @@ prod() {
         item = produce()
         lock_acquire(1)
         while (count == N)
-            cv_wait(full, 1);
+            cv_wait(full, 1); // Sleeps and releases the lock so that it doesn't go to sleep holding the lock, it wakes up when signalled by consumer
         insert_item(item);
         count++;
         cv_signal(empty, 1);
