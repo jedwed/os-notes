@@ -14,10 +14,11 @@
     - [Concurrency](#concurrency)
 - [Week 3](#week-3)
   - [Synchronisation](#synchronisation)
-    - [Q1](#q1)
+    - [Q1: Semaphores](#q1-semaphores)
     - [Q2](#q2)
-    - [Q3](#q3)
-    - [Deadlock: Q4](#deadlock-q4)
+    - [Q3: Conditional Variables](#q3-conditional-variables)
+  - [Deadlock](#deadlock)
+    - [Q4](#q4)
     - [Q5 (Got this wrong)](#q5-got-this-wrong)
 
 ---
@@ -150,7 +151,7 @@ If this code runs twice on the same x with two different threads: both threads m
 
 ## Synchronisation
 
-### Q1
+### Q1: Semaphores
 *What synchronisation mechanism or approach might one take to have one thread to wait for another thread to update state?*
 **Semaphores!**
 
@@ -177,7 +178,7 @@ This can be implemented with a semaphore with it's count initalised to 10
 my_sem = create_semaphore(10);
 ```
 
-### Q3
+### Q3: Conditional Variables
 *Multiple threads are waiting for the same thing to happen (eg. a disk block to arrive from disk). Write pseudo-code for synchronising and walking the multiple threads waiting for the same event*
 **Conditional variables!**
 ```c++
@@ -212,7 +213,11 @@ void disk_thread(void) {
 }
 ```
 
-### Deadlock: Q4
+---
+
+## Deadlock
+
+### Q4
 
 ```c++
 semaphore *mutex, *data;
