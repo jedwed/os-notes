@@ -20,6 +20,8 @@
   - [Deadlock](#deadlock)
     - [Q4](#q4)
     - [Q5 (Got this wrong)](#q5-got-this-wrong)
+  - [Concurrency and Deadlock](#concurrency-and-deadlock)
+    - [Q9](#q9)
 
 ---
 
@@ -308,3 +310,15 @@ Order for each thread:
 `hardy`: file1->file2, mutex->file1
 
 **Deadlock prone**
+
+---
+
+## Concurrency and Deadlock
+
+### Q9
+*Two processes are attempting to read independent blocks from a disk, which involves issuing a seek command and a read command. Each process is interrupted by the other in between its seek and read. When a process discovers the other process has moved the disk head, it re-issues the original seek to re-position the head for itself, which is again interrupted prior to the read. This alternate seeking continues indefinitely, with neither process able to read their data from disk.* 
+- *Is this deadlock, starvation, or livelock?*
+  It is livelock, because **two or more processes** are constantly changing state, but never actually progresses to completion. (Starvation is only when one process can't run)
+- *How would you change the system to prevent the problem?*
+  - The problem is that a process is trying to read from the other whilst it is seeking, causing a reset, and thus, livelock
+  - A solution needs to prevent a seek and a read being interrupted: can be done with a lock surrounding it. 
