@@ -22,6 +22,23 @@
     - [Q5 (Got this wrong)](#q5-got-this-wrong)
   - [Concurrency and Deadlock](#concurrency-and-deadlock)
     - [Q9](#q9)
+- [Week 4](#week-4)
+  - [R3000 and Assembly](#r3000-and-assembly)
+    - [Q1](#q1)
+    - [Q2](#q2-1)
+    - [Q3](#q3)
+    - [Q4](#q4-1)
+  - [Threads](#threads)
+    - [Q7](#q7)
+    - [Q8](#q8)
+  - [Kernel Entry and Exit](#kernel-entry-and-exit)
+    - [Q9](#q9-1)
+    - [Q10](#q10)
+    - [Q11](#q11)
+    - [Q12](#q12)
+    - [Q14](#q14)
+    - [Q15](#q15)
+    - [Q16](#q16)
 
 ---
 
@@ -322,3 +339,231 @@ Order for each thread:
 - *How would you change the system to prevent the problem?*
   - The problem is that a process is trying to read from the other whilst it is seeking, causing a reset, and thus, livelock
   - A solution needs to prevent a seek and a read being interrupted: can be done with a lock surrounding it. 
+
+---
+
+# Week 4
+
+## R3000 and Assembly 
+### Q1
+*What is branch delay?*
+Branch delay occurs when one instruction in the 5-stage pipeline is executing whilst a previous instruction has already completed execution. This affects jump instructions, since when a jump instruction has finished executing, the instruction following the jump is still in the pipeline, and hence, will always be executed
+
+### Q2
+
+```c++
+#include <stdio.h>
+
+/* function protoypes, would normally be in header files */
+int arg1(int a);
+int arg2(int a, int b);
+int arg3(int a, int b, int c);
+int arg4(int a, int b, int c, int d);
+int arg5(int a, int b, int c, int d, int e );
+int arg6(int a, int b, int c, int d, int e, int f);
+
+/* implementations */
+int arg1(int a)
+{
+  return a;
+}
+
+int arg2(int a, int b)
+{
+  return a + b;
+}  
+
+int arg3(int a, int b, int c)
+{
+  return a + b + c;
+}
+
+int arg4(int a, int b, int c, int d)
+{
+  return a + b + c + d;
+}
+
+int arg5(int a, int b, int c, int d, int e )
+{
+  return a + b + c + d + e;
+}
+
+int arg6(int a, int b, int c, int d, int e, int f)
+{
+  return a + b + c + d + e + f;
+}
+
+/* do nothing main, so we can compile it */
+int main()
+{
+}
+```
+
+```assembly
+004000f0 <arg1>:
+  4000f0:       03e00008        jr      ra
+  4000f4:       00801021        move    v0,a0
+
+004000f8 <arg2>:
+  4000f8:       03e00008        jr      ra
+  4000fc:       00851021        addu    v0,a0,a1
+
+00400100 <arg3>:
+  400100:       00851021        addu    v0,a0,a1
+  400104:       03e00008        jr      ra
+  400108:       00461021        addu    v0,v0,a2
+
+0040010c <arg4>:
+  40010c:       00852021        addu    a0,a0,a1
+  400110:       00861021        addu    v0,a0,a2
+  400114:       03e00008        jr      ra
+  400118:       00471021        addu    v0,v0,a3
+
+0040011c <arg5>:
+  40011c:       00852021        addu    a0,a0,a1
+  400120:       00863021        addu    a2,a0,a2
+  400124:       00c73821        addu    a3,a2,a3
+  400128:       8fa20010        lw      v0,16(sp)
+  40012c:       03e00008        jr      ra
+  400130:       00e21021        addu    v0,a3,v0
+
+00400134 <arg6>:
+  400134:       00852021        addu    a0,a0,a1
+  400138:       00863021        addu    a2,a0,a2
+  40013c:       00c73821        addu    a3,a2,a3
+  400140:       8fa20010        lw      v0,16(sp)
+  400144:       00000000        nop
+  400148:       00e22021        addu    a0,a3,v0
+  40014c:       8fa20014        lw      v0,20(sp)
+  400150:       03e00008        jr      ra
+  400154:       00821021        addu    v0,a0,v0
+
+00400158 <main>:
+  400158:       03e00008        jr      ra
+  40015c:       00001021        move    v0,zero
+```
+
+- *What register do functions to return the return value*
+  v0
+- *Why is there no stack reference in arg2*
+  Because we're not using any other registers or local variables and we're not calling any functions, we don't need to save the state.
+- *What does jr ra do?*
+  It changes the program counter to the return address: the caller
+- *Which register contains the first argument of the function*
+  a0
+- *Why is the move function in arg1 after the jr instruction?*
+  Because of branch delay, the instruction after the jr instruction will always execute. Hence, logically, it would be the same as if the move instruction was before the jr instruction
+- *Why does arg5 and arg6 reference the stack?*
+  Because there are only 4 argument registers, the remaining arguments would be stored onto the stack
+
+### Q3
+
+```c++
+#include <stdio.h>
+#include <unistd.h>
+
+char teststr[] = "\nThe quick brown fox jumps of the lazy dog.\n";
+
+void reverse_print(char *s)
+{
+  if (*s != '\0') {
+    reverse_print(s+1);
+    write(STDOUT_FILENO,s,1);
+  }
+}
+
+ int main()
+{
+  reverse_print(teststr);
+}
+
+```
+
+```assembly
+004000f0 <reverse_print>:
+  # Prologue
+  # Allocate space on the stack to store variables
+  4000f0:       27bdffe8        addiu   sp,sp,-24
+  # Store the return address so that function can properly return to caller later
+  4000f4:       afbf0014        sw      ra,20(sp)
+  # Store s0: By convention this register is expected to be unchanged by function that called it
+  4000f8:       afb00010        sw      s0,16(sp)
+
+  # Load the argument into v0 (s[0])
+  4000fc:       80820000        lb      v0,0(a0)
+  400100:       00000000        nop
+  # If first char of string is the null terminator, jump to epilogue
+  400104:       10400007        beqz    v0,400124 <reverse_print+0x34>
+  400108:       00808021        move    s0,a0
+  40010c:       0c10003c        jal     4000f0 <reverse_print>
+  400110:       24840001        addiu   a0,a0,1
+
+  # Call write
+  400114:       24040001        li      a0,1
+  400118:       02002821        move    a1,s0
+  40011c:       0c1000af        jal     4002bc <write>
+  400120:       24060001        li      a2,1
+
+  # Epilogue
+  400124:       8fbf0014        lw      ra,20(sp)
+  400128:       8fb00010        lw      s0,16(sp)
+  40012c:       03e00008        jr      ra
+  400130:       27bd0018        addiu   sp,sp,24
+```
+
+*What is the maximum depth the stack can grow when this function is called?*
+The depth of the stack would only be limited by hardware limitations, thus stack growth is unbounded until stack overflow occurs
+
+### Q4
+*Why is recursion or large arrays of local variables avoided by kernel programmers?*
+Recursion and large arrays may be dangerous since the kernel stack is a limited resources, and stack overflows may compromise the entire OS.
+
+---
+
+## Threads
+
+### Q7
+*A web server is constructed such that it is multithreaded. If the only way to read from a file is a normal blocking read system call, do you think user-level threads or kernel-level threads are being used for the web server? Why?*
+If user-level threads were used, when a thread makes a normal blocking read system call, the entire process is blocked until the system call returns, whereas if kernel-level threads are used, the blocking of one thread would allow the scheduler to run another thread during the syscall. Hence, kernel-level threads may be more ideal.
+
+### Q8
+*Assume a multi-process operating system with single-threaded applications. The OS manages the concurrent application requests by having a thread of control within the kernel for each process. Such a OS would have an in-kernel stack assocaited with each process.*
+
+*Switching between each process (in-kernel thread) is performed by the function switch_thread(cur_tcb,dst_tcb). What does this function do?*
+
+- The important registers associated with the current thread would need to be stored onto its stack.
+- Save the stack pointer (where we are in this particular thread's stack) to the TCB (Thread Control Block)
+- Get the stack pointer to use from the destination TCB and set the stack pointer to that value
+- Restore the registers from the destination stack
+- Restart running the destination thread
+
+---
+
+## Kernel Entry and Exit
+
+### Q9
+*What is the EPC register? What is it used for?*
+The Exception Program Counter is used to store the address of the instruction that caused the exception. It is used by the exception handler to to restart execution at the point where it was interrupted by the exception.
+
+### Q10
+*What happens to the KUc and IEc bits in the STATUS register when an exception occurs? Why? How are they restored?*
+KUc and IEc stores the current state of the CPU: KUc stores whether the CPU is in kernel mode or user mode and IEc stores whether the CPU currently has interrupts enabled or masked. When an exception occurs, KUc and IEc will be updated and the values that were previously on those bits will be shifted so that they can be restored on return (rfe). They are restored through an rfe (restore from exception) instruction by shifting the bits back to KUc and IEc
+
+### Q11
+*What is the value of ExcCode in the Cause register immediately after a system call exception occurs?*
+8
+
+### Q12
+*Why must kernel programmers be especially careful when implementing system calls?*
+System calls with poor argument checking or implementation can result in a malicious or buggy program crashing, or compromising the operating system.
+
+### Q14
+*In the example given in lectures, the library function read invoked the read system call. Is it essential that both have the same name? If not, which name is important?*
+No, the name of the system call is not important as system calls are typically referenced by number, so the two do not need to have the same name. The name that is important is the library function, because that is what the user will use to make the system call.
+
+### Q15
+*To a programmer, a system call looks like any other call to a library function. Is it important that a programmer know which library function result in system calls? Under what circumstances and why?*
+As far as logic is concerned, using library functions that make system calls won't have any effect. However, crossing the user-kernel boundary may be expensive, so a programmer that wants maximum efficiency may want to minimize system calls and user alternative functions.
+
+### Q16
+Bruh I cannot be bothered to write this up, maybe sometime in the not so foreseeable future
