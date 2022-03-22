@@ -33,7 +33,7 @@ thread_switch(threadstate_t newstate, struct wchan *wc)
 
 ## OS/161 switchframe_switch()
 - A C function 
-```assembly
+```mips
 switchframe_switch:
     /*
     * a0 contains the address of the switchframe pointer in the old thread.

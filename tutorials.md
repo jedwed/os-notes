@@ -39,6 +39,19 @@
     - [Q14](#q14)
     - [Q15](#q15)
     - [Q16](#q16)
+- [Week 5](#week-5)
+  - [Memory Hierachy and Caching](#memory-hierachy-and-caching)
+    - [Q1](#q1-1)
+    - [Q2](#q2-2)
+  - [Files and file systems](#files-and-file-systems)
+    - [Q4](#q4-2)
+    - [Q5](#q5)
+    - [Q7](#q7-1)
+    - [Q8](#q8-1)
+    - [Q9](#q9-2)
+    - [Q10](#q10-1)
+    - [Q11](#q11-1)
+    - [Q12](#q12-1)
 
 ---
 
@@ -399,7 +412,7 @@ int main()
 }
 ```
 
-```assembly
+```mips
 004000f0 <arg1>:
   4000f0:       03e00008        jr      ra
   4000f4:       00801021        move    v0,a0
@@ -479,7 +492,7 @@ void reverse_print(char *s)
 
 ```
 
-```assembly
+```mips
 004000f0 <reverse_print>:
   # Prologue
   # Allocate space on the stack to store variables
@@ -567,3 +580,78 @@ As far as logic is concerned, using library functions that make system calls won
 
 ### Q16
 Bruh I cannot be bothered to write this up, maybe sometime in the not so foreseeable future
+
+---
+
+# Week 5
+
+## Memory Hierachy and Caching
+
+### Q1
+*Describe the memory hierarchy. What types of memory appear in it? What are the characteristics of the memory as one moves through the hierarchy? How can do memory hierarchies provide both fast access times and large capacity?*
+- The memory hierachy separates the hardware storage based on their speed. As one moves down the hierachy, the storage devices will decrease in cost per bit, increase in capacity and increase in access time.
+(Also decreasing in volatility)
+
+![](https://media.geeksforgeeks.org/wp-content/uploads/Untitled-drawing-4-4.png)
+
+### Q2
+*Given that disks can stream data quite fast (1 block in tens of microseconds), why are average access times for a block in milliseconds?*
+- It needs to search for the correct block: affected by rpm (rotation per minute) speed.
+
+---
+
+## Files and file systems
+
+### Q4
+*Consider a file currently consisting of 100 records of 400 bytes. The filesystem uses fixed blocking, i.e. one 400 byte record is stored per 512 byte block. Assume that the file control block (and the index block, in the case of indexed allocation) is already in memory. Calculate how many disk I/O operations are required for contiguous, linked, and indexed (single-level) allocation strategies, if, for one record, the following conditions hold. In the contiguous-allocation case, assume that there is no room to grow at the beginning, but there is room to grow at the end of the file. Assume that the record information to be added is stored in memory.*
+
+- *The record is added at the beginning.*
+  **Contiguous**: 100 reads + 100 writes (shifting all blocks to make space) + 1 write
+  **Linked**: 1 write
+  **Indexed**: 1 write
+- *The record is added in the middle.*
+  **Contiguous**: 50 reads + 50 writes + 1 write
+  **Linked**: 50 reads + 1 write
+  **Indexed**: 1 write
+- *The record is added at the end.*
+  **Contiguous**: 1 write
+  **Linked**: 50 reads + 1 write (connecting new record to the subsequent one) + 1 write (connecting the previous record to the new one)
+  **Indexed**: 1 write
+- *The record is removed from the end.*
+  **Contiguous**: 0 write (simply write to the file control block to mark it as free, we don't care about that)
+  **Linked**: 99/100 reads + 1 write
+  **Indexed**: 0 writes (similar to the contiguous case)
+
+**Notes**:
+- Fixed blocking 
+
+### Q5
+*In the previous example, only 400 bytes is stored in each 512 byte block. Is this wasted space due to internal or external fragmentation?*
+Internal, it's space wasted within each block itself, rather than space wasted due to unused blocks
+
+### Q7
+*Given a file which varies in size from 4KiB to 4MiB, which of the three allocation schemes (contiguous, linked-list, or i-node based) would be suitable to store such a file? If the file is access randomly, how would that influence the suitability of the three schemes?*
+- Not contiguous: it will lead to a lot of internal/external framgnetation due to varying file sizes
+- Not a linked list: because file access is random, using a linked list would take longer to follow the blocks (Note: for reading, random access file is very quick)
+- Thus, i-node based allocation would be ideal (it is the most popular nowadays after all)
+
+### Q8
+*Why is there VFS Layer in Unix?*
+Because most modern systems require the ability to support many different file systems. Hence, a VFS provides a single interface, simplifying interation with various file systems
+
+### Q9
+*How does choice of block size affect file system performance. You should consider both sequential and random access.*
+Large blocks may cause more internal fragmentation: wasted space since blocks may not be required to be that large.
+Small blocks may cause more external fragmentation and there may be much more data you may need to store in each block. Also, there may be more blocks to read from, slowing down performance
+
+### Q10
+*Is the open() system call in UNIX essential? What would be the consequence of not having it?*
+We could use read() and write() automatically open the file, but it would slow down performance
+
+### Q11
+*Some operating system provide a rename system call to give a file a new name. What would be different compared to the approach of simply copying the file to a new name and then deleting the original file?*
+The i-node is kept, and it simply creates a new directory entry pointing to the same inode
+
+### Q12
+*In both UNIX and Windows, random file access is performed by having a special system call that moves the current position in the file so the subsequent read or write is performed from the new position. What would be the consequence of not having such a call. How could random access be supported by alternative means?*
+dumb dumb ahahah last question of the week i can't be bothered

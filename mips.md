@@ -26,7 +26,7 @@ int fact(int n)
 }
 ```
 
-```assembly
+```mips
 0: 1880000b blez a0,30 <fact+0x30>
 4: 24840001 addiu a0,a0,1 # Branch if less than or equal to zero
 8: 24030001 li v1,1
@@ -57,7 +57,7 @@ int sixargs(int a, int b, int c, int d, int e, int f)
 }
 ```
 
-```assembly
+```mips
 0040011c <main>:
     40011c: 27bdffd8 addiu sp,sp,-40
     400120: afbf0024 sw ra,36(sp)
