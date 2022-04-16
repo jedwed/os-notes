@@ -1,5 +1,8 @@
 
 - [Basic ASST2 Spec](#basic-asst2-spec)
+- [Calling `open()`](#calling-open)
+- [`fork()`](#fork)
+- [Code Walkthrough Questions](#code-walkthrough-questions)
 
 ---
 # Basic ASST2 Spec
@@ -18,3 +21,20 @@
     - VFS
     - emufs
     - drivers
+
+# Calling `open()`
+```c++
+int open(const char *filename, int flags, ...)
+```
+- It will be in the code section that the compiler generates
+- Our job is to implement this function: it will be in the OS kernel since it needs access to the FS and devices
+
+
+# `fork()`
+
+- Only need to set up console for file descriptors 1 and 2 for the very first process that starts (`run_program`)
+- In future, children will inherit those same references from the parent
+
+---
+
+# Code Walkthrough Questions

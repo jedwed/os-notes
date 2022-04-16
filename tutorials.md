@@ -52,6 +52,23 @@
     - [Q10](#q10-1)
     - [Q11](#q11-1)
     - [Q12](#q12-1)
+- [Week 7: To be done](#week-7-to-be-done)
+- [Week 8](#week-8)
+  - [Memory Management](#memory-management)
+    - [Q1](#q1-2)
+    - [Q2](#q2-3)
+    - [Q3](#q3-1)
+    - [Q4](#q4-3)
+    - [Q5](#q5-1)
+    - [Q6](#q6)
+  - [Virtual Memory](#virtual-memory)
+    - [Q7](#q7-2)
+    - [Q8](#q8-2)
+    - [Q9](#q9-3)
+    - [Q10](#q10-2)
+    - [Q11](#q11-2)
+    - [Q12](#q12-2)
+    - [Q13](#q13)
 
 ---
 
@@ -655,3 +672,82 @@ The i-node is kept, and it simply creates a new directory entry pointing to the 
 ### Q12
 *In both UNIX and Windows, random file access is performed by having a special system call that moves the current position in the file so the subsequent read or write is performed from the new position. What would be the consequence of not having such a call. How could random access be supported by alternative means?*
 dumb dumb ahahah last question of the week i can't be bothered
+
+---
+
+# Week 7: To be done
+
+---
+
+# Week 8
+
+## Memory Management
+
+### Q1
+*Describe internal and external fragmentation*
+- Internal fragmentation: when there is wasted space within a block since the block size if fixed and is not completely filled. 
+- External framentation: When there are gaps between blocks, thus allocating space may for an item not be possible even though there is enough space for the item.
+
+### Q2
+*What are the problems with multiprogrammed systems with fixed-partitioning?*
+Using fixed-partitioning will result in poor memory utilization due to internalfragmentation. Also, processes that require memory greater than the fixed-size won't be able to run, even if there is enough memory to satisfy it.
+
+### Q3
+*Assume a system protected with base-limit registers. What are the advantages and problems with such a protected system (compared to either a unprotected system or a paged VM system)?*
+- Advantages: It supports multi-processing: allowing more than one process to run at once. Because of both the base and limit, the processes will not interfere with each other.
+- Disadvantages: Since memory allocation must still be contiguous and the entire process must be in memory, it is prone to external fragmentation. Also sharing memory/address spaces is not supported.
+
+### Q4
+*A program is to run on a multiprogrammed machine. Describe at which points in time during program development to execution time where addresses within the program can be bound to the actual physical memory it uses for execution? What are the implication of using each of the three binding times?*
+- Compile-time: The exact address must be known in advanced, and recompiled if it ever changes. Otherwise, processes will interfere with each other. Furthermore, running the same program twice would not work, since they would be using the same physical address
+- Load-time: Addresses are annotated such that when program is loaded in to physical memory, the loader can bind those addresses to the correct physical memory location. It slow loading, and there is not much flexibility
+- Run-time: Special hardware translates the addresses into actual phyiscal addresses
+
+### Q5
+*Describe four algorithms for allocating regions of contiguous memory, and comment on their properties.*
+- First-fit: The algorithm begins searching from the start of memory for the first available region within memory to assign to a process. The most intuitive, also the most commonly used
+- Next-fit: Similar to first fit, except instead of beginning at the start of memory, it begins where the algorithm previously ended. The rationale behind this was to spread out memory a  cross, but it performed worse than first-fit due to greater external fragmentation
+- Best-fit: The algorithm choses a block that is closest in size to the requested amount of memory, which supposedly minimized external fragmentation. However, this was much slower, since it had to serach the entire list. It also leaves a lot of small holes that are unusable
+- Worst-fit: The algorithm chooses the largest block for a process. The rationale behind this was to counter the problem best-fit faced: the external fragmentation from small holes. The improvement wasn't that significant, and it still had to search through the complete list
+
+### Q6
+*What is compaction? Why would it be used?*
+Compaction shifts memory contents to place all active ones in one single contiguous block to remove external fragmentation
+
+---
+
+## Virtual Memory
+
+### Q7
+*What is swapping? What benefit might it provide? What is the main limitation of swapping?*
+Swapping is the act of relocating processes temporarily our of memory to a backing store, such that is can prioritize more important processes. The main limitation of swapping is the performance implications of transfering an entire process out of memory.
+
+### Q8
+*What is paging?*
+Paging is the partitioning of a process's virtual addresses into equally sized chuncks (pages), as well as partitioning the physical memory into equally sized chunks (frames) to simplify managing address translations.
+
+### Q9
+*Why do all virtual memory system page sizes have to be a power of 2? Draw a picture.*
+An address is divided into a page offset and a virtual page that is sent to the MMU to translate between a page and a frame. To make dividing the address easier, they should be an even chunk of a power of two.
+
+### Q10
+*What is the TLB? What is its function?*
+The TLB stands for Translation Lookaside Buffer: it acts as a cache storing ready recently used page table entries to combat the performance issues of accessing physical memory.
+
+### Q11
+*Describe a two-level page table and how it is used to translate a virtual address into a physical address.*
+durrr
+```c
+physical_address = (pfn << 12) | offset
+```
+
+### Q12
+*Given a two-level page table (in physical memory), what is the average number of physical memory accesses per virtual memory access in the case where the TLB has a 100% miss ratio, and the case of a 95% hit ratio*
+With a 100% miss ratio: you would need to one read for the first-level page table, one read for the second-level page table and one more for the actual read/write
+With a 95% hit ratio: $1\times0.95 + 3 \times 0.05 = 1.1$ (1 access with 95% probability, 3 accesses with 5% probability)
+
+### Q13
+*What are the two broad categories of events causing page faults? What other event might cause page faults?*
+- Accessing an invalid address (such as derefencing a NULL pointer)
+- If the required pages is not resident (in disk rather than in memory)
+
