@@ -69,6 +69,8 @@
     - [Q11](#q11-2)
     - [Q12](#q12-2)
     - [Q13](#q13)
+  - [Q14](#q14-1)
+    - [Q17](#q17)
 
 ---
 
@@ -750,4 +752,72 @@ With a 95% hit ratio: $1\times0.95 + 3 \times 0.05 = 1.1$ (1 access with 95% pro
 *What are the two broad categories of events causing page faults? What other event might cause page faults?*
 - Accessing an invalid address (such as derefencing a NULL pointer)
 - If the required pages is not resident (in disk rather than in memory)
+
+## Q14
+*Translate the following virtual addresses to Physical Addresses using the TLB. The system is a R3000. Indicate if the page is mapped, and if so if its read-only or read/write.*
+
+*The EntryHi register currently contains 0x00000200.*
+
+*The virtual addresses are 0x00028123, 0x0008a7eb, 0x0005cfff,0x0001c642, 0x0005b888, 0x00034000.*
+
+*TLB*
+| EntryHi    | EntryLo    |
+| ---------- | ---------- |
+| 0x00028200 | 0x0063f400 |
+| 0x00034200 | 0x001fc600 |
+| 0x0005b200 | 0x002af200 |
+| 0x0008a100 | 0x00145600 |
+| 0x0005c100 | 0x006a8700 |
+| 0x0001c200 | 0x00a97600 |
+
+First 5 hex digits refer to the VPN for EntryHi, and PFN for EntryLo
+
+The 0x00028200 EntryHi Register: 0x00028 is the VPN, 0x20 is the ASID
+The 0x0063f400 EntryLo Register: 0x0063f is the PFN, 0x4 in bits is 0100. - N: 0
+- D: 1
+- V: 0
+- G: 0
+
+- 0x00028213
+20-bit address: 0x00028
+Exists in TLB EntryHi: 0x00028200
+However, in EntryLo, the 'valid' bit is not set, hence an invalid entry
+
+- 0x0008a7eb
+20-bit address: 0x0008a
+Exists in TLB EntryHi: 0x0008a100
+**Note the ASID 0x10 does not match the current address space of 0x20**
+TLB EntryLo = 0x00145600
+Physical address: 0x00145
+0x6 in bits is 0110.
+Global bit is not set, not in correct address space, invalid
+
+- 0x0005cfff
+VPN exists: 0x0005c100, **wrong address space**
+However, in EntryLo (0x006a8700): 0x7 = 0111
+It is dirty, it is valid and it is global: hence we can ignore the ASID and it is valid
+PFN is 0x006a8
+Combine with 12-bit offset: 0xfff
+Final physical address: 0x006a8fff
+
+- 0x0001c642
+VPN exists, in correct address space
+EntryLo: 0x00a97600
+0x6 in binary is 0110: dirty bit is set and valid bit is set
+Final physical address: 0x00a97642
+
+- 0x0005b888
+0x002af200
+0x2: 0010, Valid
+Final address: 0x002af888 read only
+
+- 0x00034000
+0x001fc600
+0x6: 0110: 
+0x001fc000, read/write
+
+### Q17
+*Of the three page table types covered in lectures, which ones are most appropriate for large virtual address spaces that are sparsely populated (e.g. many single pages scattered through memory)?*
+The 2-level suffers from internal fragmentation of page table nodes themselves. The IPT and HPT is best as it is searched via a hash, and not based on the structure of the virtual address space.
+
 
