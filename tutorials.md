@@ -52,25 +52,53 @@
     - [Q10](#q10-1)
     - [Q11](#q11-1)
     - [Q12](#q12-1)
-- [Week 7: To be done](#week-7-to-be-done)
-- [Week 8](#week-8)
-  - [Memory Management](#memory-management)
+- [Week 7](#week-7)
+  - [Files and File Systems](#files-and-file-systems-1)
     - [Q1](#q1-2)
     - [Q2](#q2-3)
     - [Q3](#q3-1)
     - [Q4](#q4-3)
     - [Q5](#q5-1)
     - [Q6](#q6)
-  - [Virtual Memory](#virtual-memory)
     - [Q7](#q7-2)
     - [Q8](#q8-2)
     - [Q9](#q9-3)
     - [Q10](#q10-2)
+- [Week 8](#week-8)
+  - [Memory Management](#memory-management)
+    - [Q1](#q1-3)
+    - [Q2](#q2-4)
+    - [Q3](#q3-2)
+    - [Q4](#q4-4)
+    - [Q5](#q5-2)
+    - [Q6](#q6-1)
+  - [Virtual Memory](#virtual-memory)
+    - [Q7](#q7-3)
+    - [Q8](#q8-3)
+    - [Q9](#q9-4)
+    - [Q10](#q10-3)
     - [Q11](#q11-2)
     - [Q12](#q12-2)
     - [Q13](#q13)
-  - [Q14](#q14-1)
+    - [Q14](#q14-1)
     - [Q17](#q17)
+- [Week 10](#week-10)
+  - [Virtual Memory](#virtual-memory-1)
+    - [Q1](#q1-4)
+    - [Q2](#q2-5)
+    - [Q3](#q3-3)
+    - [Q4](#q4-5)
+  - [Multi-processors](#multi-processors)
+    - [Q5](#q5-3)
+    - [Q6](#q6-2)
+    - [Q7](#q7-4)
+    - [Q8](#q8-4)
+  - [Scheduling](#scheduling)
+    - [Q9](#q9-5)
+    - [Q10](#q10-4)
+    - [Q11](#q11-3)
+    - [Q12](#q12-3)
+    - [Q13](#q13-1)
 
 ---
 
@@ -607,7 +635,7 @@ Bruh I cannot be bothered to write this up, maybe sometime in the not so foresee
 ## Memory Hierachy and Caching
 
 ### Q1
-*Describe the memory hierarchy. What types of memory appear in it? What are the characteristics of the memory as one moves through the hierarchy? How can do memory hierarchies provide both fast access times and large capacity?*
+*Describe the memory hierarchy. What types of memory appear in it? What **are** the characteristics of the memory as one moves through the hierarchy? How can do memory hierarchies provide both fast access times and large capacity?*
 - The memory hierachy separates the hardware storage based on their speed. As one moves down the hierachy, the storage devices will decrease in cost per bit, increase in capacity and increase in access time.
 (Also decreasing in volatility)
 
@@ -673,11 +701,86 @@ The i-node is kept, and it simply creates a new directory entry pointing to the 
 
 ### Q12
 *In both UNIX and Windows, random file access is performed by having a special system call that moves the current position in the file so the subsequent read or write is performed from the new position. What would be the consequence of not having such a call. How could random access be supported by alternative means?*
-dumb dumb ahahah last question of the week i can't be bothered
+Without being able to move the file pointer, random access is either extremely inefficient as one would have to read sequentially from the start each time until the appropriate offset is arrived at, or the an extra argument would need to be added to read or write to specify the offset for each operation.
+
 
 ---
 
-# Week 7: To be done
+# Week 7
+
+## Files and File Systems
+
+### Q1
+*Why does Linux pre-allocate up to 8 blocks on a write to a file.*
+It makes sequential accesses to file quicker since they are contiguous, better locality
+
+### Q2
+*Linux uses a buffer cache to improve performance. What is the drawback of such a cache? In what scenario is it problematic? What alternative would be more appropriate where a buffer cache is inappropriate?*
+- Data being written to the buffer cache may be lost if it hasn't been flushed to the actual disk drive.
+- The alternative is using a write-through cache, where reads are written immediately to the disk. Write performance may be decreased.
+
+### Q3
+*What is the structure of the contents of a directory? Does it contain attributes such as creation times of files? If not, where might this information be stored?*
+A directory is stored as a regular file that containe a list of all its entries, each entry referring to an i-node containing file name, attributes and file-inode number
+
+### Q4
+
+*The Unix inode structure contains a reference count. What is the reference count for? Why can't we just remove the inode without checking the reference count when a file is deleted?*
+
+Inodes contain a reference count due to hard links. The reference count is equal to the number of directory entries that reference the inode. For hard-linked files, multiple directory entries reference a single inode. The inode must not be removed until no directory entries are left (ie, the reference count is 0) to ensure that the filesystem remains consistent.
+
+### Q5
+*Inode-based filesystems typically divide a file system partition into block groups. Each block group consists of a number of contiguous physical disk blocks. Inodes for a given block group are stored in the same physical location as the block groups. What are the advantages of this scheme? Are they any disadvantages?*
+
+- Block groups store the inode tables and the data blocks close to each other, and the proximity leads to better performance due to reduced seek times.
+- Because there are more different blocks, there may be more redundant information, eg. the super block and the group descriptors
+
+### Q6
+*Assume an inode with 10 direct blocks, as well as single, double and triple indirect block pointers. Taking into account creation and accounting of the indirect blocks themselves, what is the largest possible number of block reads and writes in order to:*
+1. Read one byte
+   1 access to single direct block, 1 access to double indirect block and 1 access to triple indirect block, 1 read of block: 4 reads
+2. Write one byte
+    - 4 writes: create single indirect block, create double indirect block, create triple indirect block, write data block.
+    - 3 reads, 2 writes: read single indirect, read double indirect, read triple indirect, write triple indirect, write data block
+    - Other combinations are possible
+
+*Assume i-node is cached in memory*
+
+### Q7
+*Assume you have an inode-based filesystem. The filesystem has 512 byte blocks. Each inode has 10 direct, 1 single indirect, 1 double indirect, and 1 triple indirect block pointer. Block pointers are 4 bytes each. Assume the inode and any block free list is always in memory. Blocks are not cached.*
+1. What is the maximum file size that can be stored before
+  - the single indirect pointer is needed?
+    There are 10 direct blocks, 5120 bytes = 5Kb
+  - the double indirect pointer is needed?
+    1 single indirect block - 512 bytes, each pointer is 4 bytes each. Hence 128 pointers possible
+    (10 + 128) * 512 bytes = 138 * 512 = around 70KB
+  - the triple indirect pointer is needed?
+    (10 + 128 + 128 ^ 2) * 512 = 8MB
+2. What is the maximum file size supported?
+   (10 + 128 + 128 ^ 2 + 128 ^ 3) * 512 = 1056837K
+
+### Q8
+*A typical UNIX inode stores both the file's size and the number of blocks currently used to store the file. Why store both? Should not blocks = size / block size?*
+Blocks used to store the file are only indirectly related to file size.
+
+- The blocks used to store a file includes and indirect blocks used by the filesystem to keep track of the file data blocks themselves.
+- File systems only store blocks that actually contain file data. Sparsely populated files can have large regions that are unused within a file.
+
+### Q9
+*How can deleting a file leave a inode-based file system (like ext2fs in Linux) inconsistent in the presence of a power failure.*
+Deleting a file consists of three separate modifications to the disk:
+
+- Mark disk blocks as free.
+- Remove the directory entry.
+- Mark the i-node as free.
+If the system only completes a subset of the operations (due to power failures or the like), the file system is no longer consistent. See lecture slide for example of things that can go wrong.
+
+
+
+### Q10
+*How does adding journalling to a file system avoid corruption in the presence of unexpected power failures.*
+Simply speaking, adding a journal addresses the issue by grouping file system updates into transactions that should either completely fail or succeed. These transactions are logged prior to manipulating the file system. In the presence of failure the transaction can be completed by replaying the updates remaining in the log.
+
 
 ---
 
@@ -692,7 +795,7 @@ dumb dumb ahahah last question of the week i can't be bothered
 
 ### Q2
 *What are the problems with multiprogrammed systems with fixed-partitioning?*
-Using fixed-partitioning will result in poor memory utilization due to internalfragmentation. Also, processes that require memory greater than the fixed-size won't be able to run, even if there is enough memory to satisfy it.
+Using fixed-partitioning will result in poor memory utilization due to internal fragmentation. Also, processes that require memory greater than the fixed-size won't be able to run, even if there is enough memory to satisfy it.
 
 ### Q3
 *Assume a system protected with base-limit registers. What are the advantages and problems with such a protected system (compared to either a unprotected system or a paged VM system)?*
@@ -703,7 +806,7 @@ Using fixed-partitioning will result in poor memory utilization due to internalf
 *A program is to run on a multiprogrammed machine. Describe at which points in time during program development to execution time where addresses within the program can be bound to the actual physical memory it uses for execution? What are the implication of using each of the three binding times?*
 - Compile-time: The exact address must be known in advanced, and recompiled if it ever changes. Otherwise, processes will interfere with each other. Furthermore, running the same program twice would not work, since they would be using the same physical address
 - Load-time: Addresses are annotated such that when program is loaded in to physical memory, the loader can bind those addresses to the correct physical memory location. It slow loading, and there is not much flexibility
-- Run-time: Special hardware translates the addresses into actual phyiscal addresses
+- Run-time: Special hardware translates the addresses into actual phyiscal addresses (TLB?)
 
 ### Q5
 *Describe four algorithms for allocating regions of contiguous memory, and comment on their properties.*
@@ -753,7 +856,7 @@ With a 95% hit ratio: $1\times0.95 + 3 \times 0.05 = 1.1$ (1 access with 95% pro
 - Accessing an invalid address (such as derefencing a NULL pointer)
 - If the required pages is not resident (in disk rather than in memory)
 
-## Q14
+### Q14
 *Translate the following virtual addresses to Physical Addresses using the TLB. The system is a R3000. Indicate if the page is mapped, and if so if its read-only or read/write.*
 
 *The EntryHi register currently contains 0x00000200.*
@@ -820,4 +923,86 @@ Final address: 0x002af888 read only
 *Of the three page table types covered in lectures, which ones are most appropriate for large virtual address spaces that are sparsely populated (e.g. many single pages scattered through memory)?*
 The 2-level suffers from internal fragmentation of page table nodes themselves. The IPT and HPT is best as it is searched via a hash, and not based on the structure of the virtual address space.
 
+---
+
+# Week 10
+
+## Virtual Memory
+
+### Q1
+*What effect does increasing the page size have?*
+- It would incrase internal fragmentation and the total working set size
+- It increases page fault latency due to reading more data from disk
+- Reduces size of page tables as a result of fewer pages. It will also lead to fewer page faults and increases TLB iits
+
+### Q2
+*Why is demand paging generally more prevalent than pre-paging?*
+- Demand paging only loads pages in response to page faults, only fetching pages it needs, whereas pre-paging loads additional pages in the hopes of less pagefaults. However, it wastes memory if the pre-fetched pages aren't required. Furthermore, it may eject pages that are in the application's working set. On top of the inefficient usage of memory, it is extremely difficult to determine which pages are favourable to load at a certain point in time, thus the issues outweigh the benfits for pre-paging.
+
+### Q3
+*Describe four replacement policies and compare them.*
+1. Theoretically optimal solution: Looking ahead of time at the pages and choose to replace pages that will be used at the furthest time in the future (or not at all). However, this is impossible, as we can't predict which pages may be required in the future
+2. First-in, first-out (FIFO): Tosses out the oldest page. This is a suboptimal solution as the age of the page is not related to its usage, thus it might toss out pages required very soon in the future.
+3. Least Recently Used (LRU): Toss out the pages that are the least recently used, as it it more likely that that page won't be used in the future. Hence, it makes LRU closer to the most optimal solution, however it is impractical, since it requires a time stamp to be kept for every page, updated on every reference
+4. Clock Page Replacement: Each frame has a reference bit that is set to one if page is in use. Each frames are arranged in a 'clock', and while scanning for a replacement victim, we move along the clock until we come across a page with a zero reference bit, zeroing all the reference bits that we pass along the way
+
+### Q4
+*What is thrashing? How can it be detected? What can be done to combat it?*
+- Thrashing refers to the decrease in CPU utilization as multiprogramming increases, due to not having enough memory to accommodate for all the processes' working sets, leading to more page faults.
+- It can be detected by monitoring the page fault frequency and CPU utilization
+- It can be recovered by suspending processes to reduce the degree of multiprogramming, making more physical memory available, so more of a process's working set can be in memory
+- 
+---
+
+## Multi-processors
+
+### Q5
+*What are the advantages and disadvantages of using a global scheduling queue over per-CPU queues? Under which circumstances would you use the one or the other? What features of a system would influence this decision?*
+- A global scheduling queue means each CPU has its own CPU, as opposed to a global shared ready queue. It is easier to implement and leads to a very balanced load. However, synchronisation is required to prevent race condigions, and this significantly slows down performance due to lock contention. Furthermore, since a process may be allocated to multiple CPU, cache misses for specific CPUs are much more likely
+
+### Q6
+*When does spinning on a lock (busy waiting, as opposed to blocking on the lock, and being woken up when it's free) make sense in a multiprocessor environment?*
+- Depends on the amount of time spent spinning. If it spins for longer than the overhead of context switching that blocking locks require, then it is ideal.
+
+### Q7
+*Why is preemption an issue with spinlocks?*
+- Spinning wastes CPU time and indirectly consumes bus bandwidth
+- If the spinlock holder is preempted whilst being held, it will cause other CPUs to spin waiting for the lock to be released, which is prolonged due to pre-emption until holder is scheduled again
+
+### Q8
+*How does a read-before-test-and-set lock work and why does it improve scalability?*
+```c
+while (*l == BUSY || test_and_set(l)) ;
+```
+- read-before-test-and-set first checks if the lock is busy without accessing the memory bus, reducing bus contention. It checks the processor's cache first instead before the TSL instruction generating bus traffic
+
+---
+
+## Scheduling
+
+### Q9
+*What do the terms I/O bound and CPU bound mean when used to describe a process (or thread)?*
+- The time to completion of a CPU-bound process is largely determined by the amount of CPU time it receives.
+- The time to completion of a I/O-bound process is largely determined by the time taken to service its I/O requests. CPU time plays little part in the completion time of I/O-bound processes.
+
+### Q10
+*What is the difference between cooperative and pre-emptive multitasking?*
+- Co-operative multitasking: Any threads in the running state continue running without stopping until its complete, blocks on I/O, or voluntarily yields to allow other threads to run
+- However, co-operative multitasking may allow a single process to monopolise the system
+- Pre-emptive scheduling allows the OS to send timer interrupts to processes to ensure fairer scheduling
+
+### Q11
+*Consider the multilevel feedback queue scheduling algorithm used in traditional Unix systems. It is designed to favour IO bound over CPU bound processes. How is this achieved? How does it make sure that low priority, CPU bound background jobs do not suffer starvation?*
+- Multilevel feedback queue scheduling algorithm constantly recomputes the priority levels for each process based on their CPU usage. Hence, CPU-bound processes will be punished and have a lower priority than IO-bound processes that don't consume as much CPU. 
+- A process's CPU usage will decay overtime, so low-priority CPU-bound processes will not be permanently punished and straved
+
+### Q12
+*Why would a hypothetical OS always schedule a thread in the same address space over a thread in a different address space? Is this a good idea?*
+- The benefit of remaining in the address space is that you don't have to reset the TLB, reducing some performance penalties associated with context switching
+- Ultimately, it's not a good idea since it can starve threads that are in a different address space
+### Q13
+*Why would a round robin scheduler NOT use a very short time slice to provide good responsive application behaviour?*
+- Using a short timeslice would require a more context switching, generating more overhead
+  
+---
 
